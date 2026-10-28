@@ -1,160 +1,91 @@
+# FastBackUp_2.0
 
-# FastBackUp
+**FastBackUp_2.0** is a lightweight Windows backup and restore utility written in Windows Batch and PowerShell. It creates ZIP archives of individual files or folders, splits large archives into smaller parts, and lets you restore data later.
 
-FastBackUp is a Windows backup and restore utility built with PowerShell and a batch-file launcher. It can create ZIP archives from a selected file or folder, split large archives into numbered parts, and join those parts again when restoring data.
+Created by **Bratislav Cvetković**. Distributed under the MIT License; see [LICENSE.txt](LICENSE.txt).
 
 ## Features
 
-- Back up a single file or an entire folder.
-- Select source files, folders, backup destinations, and temporary locations using Windows dialogs.
-- Choose the name of the temporary working folder.
+- Back up an individual file or an entire folder.
 - Create ZIP archives using the Windows `tar.exe` utility.
-- Test ZIP archives before splitting them.
-- Split large ZIP archives into numbered parts of up to 3.5 GiB each.
-- Store archive parts in a dedicated backup folder.
-- Join numbered parts into a single ZIP archive during restoration.
-- Test the reassembled archive before extraction.
-- Extract restored files immediately or keep the ZIP archive for manual extraction.
-- Record operations and errors in a log file.
-- Display operation results and elapsed time.
-
-## Project Files
-
-Keep these two files in the same directory:
-
-- `FastBackUp.bat` — launches the program and displays the main menu.
-- `FastBackUp.ps1` — contains the backup and restore functionality.
-
-The batch file expects `FastBackUp.ps1` to be located in the same directory.
+- Verify the ZIP archive before splitting it.
+- Split large ZIP archives into parts of approximately 3.5 GiB each, suitable for storage media with file-size limits such as FAT32.
+- Join the archive parts when restoring and verify the resulting ZIP archive.
+- Choose whether to extract the restored files immediately or keep the joined ZIP for manual extraction.
+- Remember the 20 most recent successfully completed operations, including both backups and restores. Select an item to repeat it.
+- Store operation history in the current user's local application data folder and write a log to the Windows temporary folder.
+- Use Windows folder and file selection dialogs.
 
 ## Requirements
 
-- Windows.
-- Windows PowerShell.
-- The Windows `tar.exe` utility, normally located at `%WINDIR%\System32\tar.exe`.
-- Permission to read the source files and write to the selected backup and temporary locations.
+- Windows 10 or Windows 11.
+- Windows PowerShell, included with Windows.
+- The Windows `tar.exe` utility, normally available at `%WINDIR%\System32\tar.exe`.
+- The two program files must remain together in the same folder.
 
-The supplied batch launcher runs PowerShell with `-ExecutionPolicy Bypass` for that invocation. Review the script before running it, especially if it came from an untrusted source.
+No third-party archiving utility is required by the script.
 
-## Installation
+## Getting started
 
-1. Download `FastBackUp.bat` and `FastBackUp.ps1`.
-2. Place both files in the same folder.
-3. Review the PowerShell script before running it.
-4. Double-click `FastBackUp.bat`.
+1. Download or clone this repository, or download the ZIP package from the project's Releases page.
+2. Extract the files into a folder.
+3. Keep `FastBackUp_2.0.bat` and `FastBackUp_2.0.ps1` in the same folder.
+4. Double-click `FastBackUp.bat` to start the program.
+5. Choose an option from the menu:
+   - **1 — Repeat one of the last 20 operations**
+   - **2 — Create a new backup**
+   - **3 — Restore data from a backup**
+   - **4 — Exit**
 
-## Main Menu
+## Backup process
 
-The program provides three options:
+1. Select an individual file or a folder.
+2. Select the destination folder where the backup should be stored.
+3. Choose a location and name for the temporary working folder used to assemble the ZIP archive.
+4. Confirm or edit the suggested backup name.
+5. FastBackUp creates and verifies a ZIP archive, splits it into numbered parts, and stores the parts and information files in a timestamped backup folder.
 
-- `1` — Create a backup.
-- `2` — Restore data from a backup.
-- `3` — Exit.
+The backup folder contains the split archive parts and information files describing the backup. Do not rename or remove individual `.zip.001`, `.zip.002`, and subsequent parts if you intend to restore the archive.
 
-## Creating a Backup
+## Restore process
 
-1. Run `FastBackUp.bat`.
-2. Select option `1`.
-3. Choose the source type:
-   - `1` — Select an individual file.
-   - `2` — Select a folder.
-   - `3` — Cancel.
-4. Use the Windows dialog to select the file or folder.
-5. Select the destination folder where the backup folder will be created.
-6. Enter a name for the temporary working folder, or keep the suggested name `RezervnaKopijaTemp`.
-7. Select the location for the temporary folder.
-8. Review the suggested backup name. The default name includes the source name and a timestamp; change it if needed.
-9. Wait while the program creates the ZIP archive, tests it, and splits it into numbered parts.
-10. When the operation finishes, check the completion message and backup location.
+1. Choose the folder containing the split backup archive parts.
+2. Select a temporary working folder.
+3. FastBackUp joins the parts into a ZIP archive and verifies it.
+4. Choose whether to extract the files now. If you choose not to extract, the joined ZIP remains in the temporary working folder for manual extraction.
+5. If extracting, select the destination parent folder. FastBackUp creates a subfolder named after the backup.
 
-A backup folder contains numbered archive parts, for example:
+If the destination subfolder already exists, the program asks before continuing. Review the destination carefully before confirming, especially when restoring important files.
 
-- `<backup-name>.zip.001`
-- `<backup-name>.zip.002`
-- Additional numbered parts if necessary.
+## Operation history
 
-It also contains:
+FastBackUp keeps the 20 most recent successfully completed backup and restore operations. The newest operation appears first. When a new operation is saved and the history already contains 20 entries, the oldest **history entry** is removed. This does not delete any backup archive or restored files.
 
-- `FastBackUp_info.txt` — backup details and timing information.
-- `USPEH.txt` — a success marker written after a successful backup.
+The history file is stored at:
 
-The temporary ZIP archive is deleted after the archive has been split successfully.
+`%LOCALAPPDATA%\FastBackUp\history.json`
 
-## Restoring a Backup
-
-1. Run `FastBackUp.bat`.
-2. Select option `2`.
-3. Select the folder that directly contains the numbered archive parts.
-4. Enter a name for the temporary working folder, or keep `RezervnaKopijaTemp`.
-5. Select the location for the temporary folder.
-6. FastBackUp joins the numbered parts into one ZIP archive.
-7. The program tests the reassembled ZIP archive.
-8. Choose whether to extract the files immediately:
-   - **Yes** — select a destination and extract the archive.
-   - **No** — leave the joined ZIP file in the temporary folder for manual extraction.
-9. If the target restore folder already exists, follow the program's prompt.
-
-The joined ZIP archive remains in the temporary folder after extraction. You can delete it manually when it is no longer needed.
-
-## Archive Parts and FAT32 Storage
-
-FastBackUp splits archives into parts of up to 3.5 GiB (3.5 × 1024³ bytes). This can make large backups easier to store on FAT32-formatted drives, which cannot store a single file larger than 4 GiB.
-
-Keep all numbered parts together. Do not rename, delete, or modify them.
-
-A complete sequence starts with `.zip.001` and continues consecutively, for example:
-
-- `<backup-name>.zip.001`
-- `<backup-name>.zip.002`
-- `<backup-name>.zip.003`
-
-A missing or damaged part can prevent restoration.
-
-## Logs and Backup Information
-
-The program writes its operation log to:
+The log file is stored at:
 
 `%TEMP%\FastBackUp.log`
 
-Each completed backup contains `FastBackUp_info.txt` and `USPEH.txt`.
+History entries store paths used by the operation. Replaying an entry requires the relevant source, backup folder, destination, and temporary folder to still exist. A repeated backup creates a new timestamped backup rather than overwriting the previous backup.
 
-If an operation fails, check the displayed error message and the log file. Remove personal paths or sensitive information before sharing logs publicly.
+## Important notes
 
-## Troubleshooting
+- Keep more than one copy of important data. A backup on the same physical drive as the original data may not protect against drive failure.
+- Verify that the selected source and destination are correct before starting an operation.
+- Restoring extracts files into a subfolder named after the backup; it does not intentionally extract directly into the selected parent folder.
+- The program is provided as-is. Test it with non-critical files before relying on it for important data.
+- The script uses the built-in Windows `tar.exe`. Availability and behavior may vary on modified or older Windows installations.
 
-### FastBackUp.ps1 cannot be found
+## Files
 
-Make sure `FastBackUp.bat` and `FastBackUp.ps1` are in the same directory and that the PowerShell file is named exactly `FastBackUp.ps1`.
-
-### The program cannot find tar.exe
-
-Check that `%WINDIR%\System32\tar.exe` exists on your Windows installation.
-
-### The selected backup folder does not contain .zip.001
-
-Select the folder that directly contains the numbered archive parts, not its parent folder.
-
-### The reassembled ZIP archive fails validation
-
-The archive may be incomplete or damaged. Check that every numbered part is present and unchanged. If possible, create a new backup from the original source.
-
-### There is not enough temporary storage
-
-The program creates a complete ZIP archive before splitting it. During restoration, the parts are joined into a single ZIP file before extraction. Make sure the selected temporary location has enough free space.
-
-## Limitations and Safety Notes
-
-- Test restoration periodically, preferably with non-critical files, before relying on a backup for important data.
-- FastBackUp does not encrypt or password-protect ZIP archives.
-- The current version does not automatically delete older backup folders. Manage backup retention manually.
-- The current interface messages are primarily in Serbian.
-- Archive creation, testing, and extraction rely on the Windows `tar.exe` utility. Behavior may depend on the Windows version and its bundled utility.
-- Keep an additional copy of important data. A backup stored on only one device or drive may be lost if that device fails.
+- `FastBackUp_2.0.bat` — launches the program and displays the main menu.
+- `FastBackUp_2.0.ps1` — implements backup, archive splitting, restore, and operation history.
+- `README.md` — documentation.
+- `LICENSE.txt` — MIT License.
 
 ## License
 
-This project is distributed under the MIT License. See the `LICENSE` file for the complete license text.
-
-## Disclaimer
-
-FastBackUp is provided "as is", without warranty of any kind. Use it at your own risk. Test that backups can be restored before relying on them for important data.
+This project is licensed under the MIT License. See [LICENSE.txt](LICENSE.txt) for the full text.
